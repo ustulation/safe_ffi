@@ -20,9 +20,6 @@ cbor            = "*"
 sodiumoxide     = "*"
 rustc-serialize = "*"
 
-[dev-dependencies]
-regex = "*"
-
 [dependencies.safe_client]
 git = "https://github.com/maidsafe/safe_client.git"
 

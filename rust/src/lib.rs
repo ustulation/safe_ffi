@@ -45,5 +45,58 @@ unused_qualifications, variant_size_differences)]
 
 //extern crate cbor;
 //extern crate routing;
+extern crate safe_nfs;
 //extern crate sodiumoxide;
-//#[macro_use] extern crate safe_client;
+#[macro_use] extern crate safe_client;
+
+/// Errors during FFI operations
+pub enum FfiError {
+    /// Errors from safe_client
+    ClientError(safe_client::errors::ClientError),
+    /// Errors from safe_nfs
+    NfsError(safe_nfs::errors::NfsError),
+    /// Invalid Path given
+    CouldNotDecodePath,
+    /// Unexpected or some programming error
+    Unexpected(String),
+}
+
+impl std::fmt::Debug for FfiError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match *self {
+            FfiError::ClientError(ref error) => write!(f, "FfiError::ClientError -> {:?}", error),
+            FfiError::NfsError(ref error)    => write!(f, "FfiError::NfsError -> {:?}", error),
+            FfiError::CouldNotDecodePath     => write!(f, "FfiError::CouldNotDecodePath"),
+            FfiError::Unexpected(ref error)  => write!(f, "FfiError::Unexpected::{{{:?}}}", error),
+        }
+    }
+}
+
+/// Tokenise the give path
+pub fn path_tokeniser(path: &String) -> Result<Vec<String>, FfiError> {
+    Ok(path.split("/").filter(|a| !a.is_empty()).map(|a| a.to_string()).collect())
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn parse_path() {
+        let path_0 = "/abc/d/ef".to_string();
+        let path_1 = "/abc/d/ef/".to_string();
+        let path_2 = "///abc///d/ef////".to_string();
+
+        let expected = vec!["abc".to_string(),
+                            "d".to_string(),
+                            "ef".to_string()];
+
+        let tokenised_0 = eval_result!(path_tokeniser(&path_0));
+        let tokenised_1 = eval_result!(path_tokeniser(&path_1));
+        let tokenised_2 = eval_result!(path_tokeniser(&path_2));
+
+        assert_eq!(tokenised_0, expected);
+        assert_eq!(tokenised_1, expected);
+        assert_eq!(tokenised_2, expected);
+    }
+}
