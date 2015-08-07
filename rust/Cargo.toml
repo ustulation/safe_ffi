@@ -3,22 +3,19 @@ name          = "nfs-ffi"
 version       = "0.0.1"
 authors       = ["MaidSafe Developers <dev@maidsafe.net>"]
 description   = "FFI-wrapper over safe_nfs"
-#documentation = ""
-#repository    = ""
+#documentation = "" // TODO
+#repository    = "" // TODO
 readme        = "README.md"
 license       = "GPL-3.0"
 homepage      = "http://maidsafe.net"
 
 [dependencies]
 # ---- Maidsafe ----
-routing         = "0.2.*"
-#safe_nfs        = "*"
-#safe_client     = "*"
+#safe_nfs    = "*"
+#safe_client = "*"
 
 # ---- Others ----
-cbor            = "*"
-sodiumoxide     = "*"
-rustc-serialize = "*"
+libc = "*"
 
 [dependencies.safe_client]
 git = "https://github.com/maidsafe/safe_client.git"
@@ -27,4 +24,4 @@ git = "https://github.com/maidsafe/safe_client.git"
 git = "https://github.com/maidsafe/safe_nfs.git"
 
 [features]
-USE_ACTUAL_ROUTING = ["safe_client/USE_ACTUAL_ROUTING"]
+USE_ACTUAL_ROUTING = ["safe_nfs/USE_ACTUAL_ROUTING", "safe_client/USE_ACTUAL_ROUTING"]

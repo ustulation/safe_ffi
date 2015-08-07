@@ -43,60 +43,207 @@ unused_qualifications, variant_size_differences)]
 //! #Nfs-FFI Library
 //! [Project github page](https://github.com/maidsafe/safe_dns)
 
-//extern crate cbor;
-//extern crate routing;
+extern crate libc;
 extern crate safe_nfs;
-//extern crate sodiumoxide;
 #[macro_use] extern crate safe_client;
 
-/// Errors during FFI operations
-pub enum FfiError {
-    /// Errors from safe_client
-    ClientError(safe_client::errors::ClientError),
-    /// Errors from safe_nfs
-    NfsError(safe_nfs::errors::NfsError),
-    /// Invalid Path given
-    CouldNotDecodePath,
-    /// Unexpected or some programming error
-    Unexpected(String),
+use std::error::Error;
+
+#[macro_use] mod macros;
+
+mod errors;
+mod implementation;
+
+/// Create a subdirectory. The Name of the subdirectory is the final token in the given path. Eg.,
+/// if given path = "/a/b/c/d" then "d" is interpreted as the subdirectory intended to be created.
+#[no_mangle]
+pub extern fn create_sub_directory(c_path: *const libc::c_char, is_private: bool) -> i32 {
+    let cstr_path = unsafe { std::ffi::CStr::from_ptr(c_path) };
+    let mut tokens = ffi_try!(implementation::path_tokeniser(cstr_path));
+
+    let sub_dir_name = ffi_try!(tokens.pop().ok_or(errors::FfiError::InvalidPath));
+    let mut parent_dir_listing = ffi_try!(implementation::get_final_subdirectory(&tokens));
+    let dir_helper = safe_nfs::helper::directory_helper::DirectoryHelper::new(((implementation::get_test_client())));
+
+    let access_level = if is_private {
+        safe_nfs::AccessLevel::Private
+    } else {
+        safe_nfs::AccessLevel::Public
+    };
+
+    let _ = ffi_try!(dir_helper.create(sub_dir_name,
+                                       safe_nfs::UNVERSIONED_DIRECTORY_LISTING_TAG,
+                                       vec![],
+                                       false,
+                                       access_level,
+                                       Some(&mut parent_dir_listing)));
+
+    0
 }
 
-impl std::fmt::Debug for FfiError {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        match *self {
-            FfiError::ClientError(ref error) => write!(f, "FfiError::ClientError -> {:?}", error),
-            FfiError::NfsError(ref error)    => write!(f, "FfiError::NfsError -> {:?}", error),
-            FfiError::CouldNotDecodePath     => write!(f, "FfiError::CouldNotDecodePath"),
-            FfiError::Unexpected(ref error)  => write!(f, "FfiError::Unexpected::{{{:?}}}", error),
-        }
-    }
+/// Create a file. The Name of the file is the final token in the given path. Eg.,
+/// if given path = "/a/b/c/d" then "d" is interpreted as the file intended to be created.
+#[no_mangle]
+pub extern fn create_file(c_path: *const libc::c_char, c_content: *const libc::c_char) -> i32 {
+    let cstr_path = unsafe { std::ffi::CStr::from_ptr(c_path) };
+    let mut tokens = ffi_try!(implementation::path_tokeniser(cstr_path));
+
+    let file_name = ffi_try!(tokens.pop().ok_or(errors::FfiError::InvalidPath));
+    let parent_dir_listing = ffi_try!(implementation::get_final_subdirectory(&tokens));
+    let file_helper = safe_nfs::helper::file_helper::FileHelper::new(implementation::get_test_client());
+
+    let mut writer = ffi_try!(file_helper.create(file_name,
+                                                 vec![],
+                                                 parent_dir_listing));
+
+    let cstr_content = unsafe { std::ffi::CStr::from_ptr(c_content) };
+    writer.write(cstr_content.to_bytes(), 0);
+    let _ = ffi_try!(writer.close());
+
+    0
 }
 
-/// Tokenise the give path
-pub fn path_tokeniser(path: &String) -> Result<Vec<String>, FfiError> {
-    Ok(path.split("/").filter(|a| !a.is_empty()).map(|a| a.to_string()).collect())
+/// Get the size of the file. c_size should be properly and sufficiently pre-allocated.
+#[no_mangle]
+pub extern fn get_file_size(c_path: *const libc::c_char, c_size: *mut libc::c_int) -> i32 {
+    let cstr_path = unsafe { std::ffi::CStr::from_ptr(c_path) };
+    let mut tokens = ffi_try!(implementation::path_tokeniser(cstr_path));
+
+    let file_name = ffi_try!(tokens.pop().ok_or(errors::FfiError::InvalidPath));
+    let parent_dir_listing = ffi_try!(implementation::get_final_subdirectory(&tokens));
+
+    let size = ffi_try!(implementation::get_file_size(&file_name, &parent_dir_listing));
+
+    unsafe { std::ptr::write(c_size, size as libc::c_int) };
+
+    0
+}
+
+/// Read a file. The Name of the file is the final token in the given path. Eg.,
+/// if given path = "/a/b/c/d" then "d" is interpreted as the file intended to be read.
+/// c_content_buf should be properly and sufficiently pre-allocated.
+#[no_mangle]
+pub extern fn get_file_content(c_path: *const libc::c_char, c_content_buf: *mut libc::c_char) -> i32 {
+    let cstr_path = unsafe { std::ffi::CStr::from_ptr(c_path) };
+    let mut tokens = ffi_try!(implementation::path_tokeniser(cstr_path));
+
+    let file_name = ffi_try!(tokens.pop().ok_or(errors::FfiError::InvalidPath));
+    let parent_dir_listing = ffi_try!(implementation::get_final_subdirectory(&tokens));
+    let data_vec = ffi_try!(implementation::get_file_content(&file_name, &parent_dir_listing));
+
+    let cstring_content = ffi_try!(std::ffi::CString::new(data_vec).map_err(|error| errors::FfiError::from(error.description())));
+    unsafe { std::ptr::copy(cstring_content.as_ptr(), c_content_buf, cstring_content.as_bytes_with_nul().len()) };
+
+    0
 }
 
 #[cfg(test)]
 mod test {
     use super::*;
+    use std::error::Error;
 
     #[test]
-    fn parse_path() {
-        let path_0 = "/abc/d/ef".to_string();
-        let path_1 = "/abc/d/ef/".to_string();
-        let path_2 = "///abc///d/ef////".to_string();
+    fn create_directories_files_and_read_files() {
+        let size_of_c_int = ::std::mem::size_of::<::libc::c_int>();
+        let size_of_c_char = ::std::mem::size_of::<::libc::c_char>();
 
-        let expected = vec!["abc".to_string(),
-                            "d".to_string(),
-                            "ef".to_string()];
+        // --------------------------------------------------------------------
+        // Create Sub-directory /a - c string size with \0 = 3
+        // --------------------------------------------------------------------
+        let mut c_path = unsafe { ::libc::malloc(3 * size_of_c_char as ::libc::size_t) } as *mut ::libc::c_char;
 
-        let tokenised_0 = eval_result!(path_tokeniser(&path_0));
-        let tokenised_1 = eval_result!(path_tokeniser(&path_1));
-        let tokenised_2 = eval_result!(path_tokeniser(&path_2));
+        {
+            let cstring_path = eval_result!(::std::ffi::CString::new("/a").map_err(|error| ::errors::FfiError::from(error.description())));
 
-        assert_eq!(tokenised_0, expected);
-        assert_eq!(tokenised_1, expected);
-        assert_eq!(tokenised_2, expected);
+            let path_lenght_for_c = cstring_path.as_bytes_with_nul().len();
+            assert_eq!(path_lenght_for_c, 3 * size_of_c_char);
+
+            unsafe { ::std::ptr::copy(cstring_path.as_ptr(), c_path, path_lenght_for_c) };
+        }
+
+        assert_eq!(create_sub_directory(c_path, true), 0); // TODO passing false fails in nfs-crate - UnsuccessfulEncodeDecode
+        unsafe { ::libc::free(c_path as *mut ::libc::c_void) };
+
+        // --------------------------------------------------------------------
+        // Create Sub-directory /a/last - c string size with \0 = 8
+        // --------------------------------------------------------------------
+        c_path = unsafe { ::libc::malloc(8 * size_of_c_char as ::libc::size_t) } as *mut ::libc::c_char;
+
+        {
+            let cstring_path = eval_result!(::std::ffi::CString::new("/a/last").map_err(|error| ::errors::FfiError::from(error.description())));
+
+            let path_lenght_for_c = cstring_path.as_bytes_with_nul().len();
+            assert_eq!(path_lenght_for_c, 8 * size_of_c_char);
+
+            unsafe { ::std::ptr::copy(cstring_path.as_ptr(), c_path, path_lenght_for_c) };
+        }
+
+        assert_eq!(create_sub_directory(c_path, true), 0); // TODO passing false fails in nfs-crate - UnsuccessfulEncodeDecode
+        unsafe { ::libc::free(c_path as *mut ::libc::c_void) };
+
+        // --------------------------------------------------------------------
+        // Create file /a/last/file.txt - c string size with \0 = 17
+        // --------------------------------------------------------------------
+        c_path = unsafe { ::libc::malloc(17 * size_of_c_char as ::libc::size_t) } as *mut ::libc::c_char;
+
+        let cstring_content = eval_result!(::std::ffi::CString::new("This is the file content.").map_err(|error| ::errors::FfiError::from(error.description())));
+
+        {
+            let cstring_path = eval_result!(::std::ffi::CString::new("/a/last/file.txt").map_err(|error| ::errors::FfiError::from(error.description())));
+
+            let path_lenght_for_c = cstring_path.as_bytes_with_nul().len();
+            assert_eq!(path_lenght_for_c, 17 * size_of_c_char);
+
+            unsafe { ::std::ptr::copy(cstring_path.as_ptr(), c_path, path_lenght_for_c) };
+        }
+
+        assert_eq!(create_file(c_path, cstring_content.as_ptr()), 0);
+        unsafe { ::libc::free(c_path as *mut ::libc::c_void) };
+
+        // --------------------------------------------------------------------
+        // Get the size of the file
+        // --------------------------------------------------------------------
+        c_path = unsafe { ::libc::malloc(17 * size_of_c_char as ::libc::size_t) } as *mut ::libc::c_char;
+
+        {
+            let cstring_path = eval_result!(::std::ffi::CString::new("/a/last/file.txt").map_err(|error| ::errors::FfiError::from(error.description())));
+
+            let path_lenght_for_c = cstring_path.as_bytes_with_nul().len();
+            assert_eq!(path_lenght_for_c, 17 * size_of_c_char);
+
+            unsafe { ::std::ptr::copy(cstring_path.as_ptr(), c_path, path_lenght_for_c) };
+        }
+
+        let c_size = unsafe { ::libc::malloc(1 * size_of_c_int as ::libc::size_t) } as *mut ::libc::c_int;
+
+        assert_eq!(get_file_size(c_path, c_size), 0);
+        unsafe { assert_eq!(*c_size as usize, cstring_content.as_bytes().len()) };
+
+        unsafe { ::libc::free(c_path as *mut ::libc::c_void) };
+
+        // --------------------------------------------------------------------
+        // Get the contents of the file
+        // --------------------------------------------------------------------
+        c_path = unsafe { ::libc::malloc(17 * size_of_c_char as ::libc::size_t) } as *mut ::libc::c_char;
+
+        {
+            let cstring_path = eval_result!(::std::ffi::CString::new("/a/last/file.txt").map_err(|error| ::errors::FfiError::from(error.description())));
+
+            let path_lenght_for_c = cstring_path.as_bytes_with_nul().len();
+            assert_eq!(path_lenght_for_c, 17 * size_of_c_char);
+
+            unsafe { ::std::ptr::copy(cstring_path.as_ptr(), c_path, path_lenght_for_c) };
+        }
+
+        let c_content = unsafe { ::libc::malloc(((*c_size + 1) as usize * ::std::mem::size_of::<::libc::c_int>()) as ::libc::size_t) } as *mut ::libc::c_char;
+
+        assert_eq!(get_file_content(c_path, c_content), 0);
+
+        let read_cstr_content = unsafe { ::std::ffi::CStr::from_ptr(c_content) };
+        assert_eq!(&*cstring_content, read_cstr_content);
+
+        unsafe { ::libc::free(c_path as *mut ::libc::c_void) };
+        unsafe { ::libc::free(c_size as *mut ::libc::c_void) };
+        unsafe { ::libc::free(c_content as *mut ::libc::c_void) };
     }
 }
