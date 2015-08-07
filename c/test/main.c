@@ -39,7 +39,7 @@ int main() {
     printf("Successful !\n");
 
     const char* file_content = "This is the file's content.";
-    printf("\nCreating file \"/a/last/hello.txt\" with content: \"%s\" ...\n", file_content);
+    printf("\nCreating file \"/a/last/hello.txt\" with content: \"%s\" of size: %zd Bytes...\n", file_content, strlen(file_content));
     const char* absolute_path_a_last_hello = "/a/last/hello.txt";
     error_code = c_create_file(absolute_path_a_last_hello, file_content);
     assert(!error_code);
