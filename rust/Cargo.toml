@@ -9,6 +9,10 @@ readme        = "README.md"
 license       = "GPL-3.0"
 homepage      = "http://maidsafe.net"
 
+[lib]
+name       = "nfs_ffi"
+crate_type = ["staticlib"]
+
 [dependencies]
 # ---- Maidsafe ----
 #safe_nfs    = "*"
