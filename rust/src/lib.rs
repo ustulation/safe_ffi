@@ -45,6 +45,8 @@ unused_qualifications, variant_size_differences)]
 
 extern crate libc;
 extern crate safe_nfs;
+extern crate safe_dns;
+extern crate sodiumoxide;
 #[macro_use] extern crate safe_client;
 
 use std::error::Error;
@@ -63,7 +65,7 @@ pub extern fn create_sub_directory(c_path: *const libc::c_char, is_private: bool
 
     let sub_dir_name = ffi_try!(tokens.pop().ok_or(errors::FfiError::InvalidPath));
     let mut parent_dir_listing = ffi_try!(implementation::get_final_subdirectory(&tokens));
-    let dir_helper = safe_nfs::helper::directory_helper::DirectoryHelper::new(((implementation::get_test_client())));
+    let dir_helper = safe_nfs::helper::directory_helper::DirectoryHelper::new(implementation::get_test_client());
 
     let access_level = if is_private {
         safe_nfs::AccessLevel::Private
@@ -135,6 +137,74 @@ pub extern fn get_file_content(c_path: *const libc::c_char, c_content_buf: *mut 
     unsafe { std::ptr::copy(cstring_content.as_ptr(), c_content_buf, cstring_content.as_bytes_with_nul().len()) };
 
     0
+}
+
+/// Register Dns
+#[no_mangle]
+pub extern fn register_dns(c_long_name             : *const libc::c_char,
+                           c_service_name          : *const libc::c_char,
+                           c_service_home_dir_path : *const libc::c_char) -> i32 {
+    let client = implementation::get_test_client();
+
+    let cstr_service_home_dir_path = unsafe { std::ffi::CStr::from_ptr(c_service_home_dir_path) };
+    let tokens = ffi_try!(implementation::path_tokeniser(cstr_service_home_dir_path));
+
+    let service_home_dir_listing = ffi_try!(implementation::get_final_subdirectory(&tokens));
+    let service_home_dir_key = service_home_dir_listing.get_info().get_key();
+
+    let long_name = ffi_try!(c_char_ptr_to_string(c_long_name));
+    let service_name = ffi_try!(c_char_ptr_to_string(c_service_name));
+
+    let (public_encryption_key, secret_encryption_key) = sodiumoxide::crypto::box_::gen_keypair();
+    let public_signing_key = client.lock().unwrap().get_public_signing_key().clone();
+    let secret_signing_key = client.lock().unwrap().get_secret_signing_key().clone();
+
+    let dns_operations = ffi_try!(safe_dns::dns_operations::DnsOperations::new(client.clone()));
+    let record_struct_data = ffi_try!(dns_operations.register_dns(long_name,
+                                                                  &public_encryption_key,
+                                                                  &secret_encryption_key,
+                                                                  &vec![(service_name, (service_home_dir_key.0.clone(), service_home_dir_key.1))],
+                                                                  vec![public_signing_key],
+                                                                  &secret_signing_key,
+                                                                  None));
+
+    ffi_try!(client.lock().unwrap().put(record_struct_data.name(), safe_client::client::Data::StructuredData(record_struct_data)));
+
+    0
+}
+
+/// Add a new service to the existing (registered) Dns record
+#[no_mangle]
+pub extern fn add_service(c_long_name            : *const libc::c_char,
+                          c_service_name         : *const libc::c_char,
+                          c_service_home_dir_path: *const libc::c_char) -> i32 {
+    let client = implementation::get_test_client();
+
+    let cstr_service_home_dir_path = unsafe { std::ffi::CStr::from_ptr(c_service_home_dir_path) };
+    let tokens = ffi_try!(implementation::path_tokeniser(cstr_service_home_dir_path));
+
+    let service_home_dir_listing = ffi_try!(implementation::get_final_subdirectory(&tokens));
+    let service_home_dir_key = service_home_dir_listing.get_info().get_key();
+
+    let long_name = ffi_try!(c_char_ptr_to_string(c_long_name));
+    let service_name = ffi_try!(c_char_ptr_to_string(c_service_name));
+
+    let secret_signing_key = client.lock().unwrap().get_secret_signing_key().clone();
+
+    let dns_operations = ffi_try!(safe_dns::dns_operations::DnsOperations::new(client.clone()));
+    let record_struct_data = ffi_try!(dns_operations.add_service(&long_name,
+                                                                 (service_name, (service_home_dir_key.0.clone(), service_home_dir_key.1)),
+                                                                 &secret_signing_key,
+                                                                 None));
+
+    ffi_try!(client.lock().unwrap().post(record_struct_data.name(), safe_client::client::Data::StructuredData(record_struct_data)));
+
+    0
+}
+
+fn c_char_ptr_to_string(c_char_ptr: *const libc::c_char) -> Result<String, errors::FfiError> {
+    let cstr = unsafe { std::ffi::CStr::from_ptr(c_char_ptr) };
+    Ok(try!(String::from_utf8(cstr.to_bytes().iter().map(|a| *a).collect()).map_err(|error| ::errors::FfiError::from(error.description()))))
 }
 
 #[cfg(test)]

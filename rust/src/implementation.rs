@@ -17,12 +17,10 @@
 
 use std::error::Error;
 
-/// Global Singleton Client
 pub struct Client {
     client: ::std::sync::Arc<::std::sync::Mutex<::safe_client::client::Client>>,
 }
 
-/// Getter for the Singleton
 pub fn get_test_client() -> ::std::sync::Arc<::std::sync::Mutex<::safe_client::client::Client>> {
     static mut CLIENT: *const Client = 0 as *const Client;
     static mut ONCE: ::std::sync::Once = ::std::sync::ONCE_INIT;
@@ -40,7 +38,6 @@ pub fn get_test_client() -> ::std::sync::Arc<::std::sync::Mutex<::safe_client::c
     }
 }
 
-/// Tokenise the given path
 pub fn path_tokeniser(cstr_path: &::std::ffi::CStr) -> Result<Vec<String>, ::errors::FfiError> {
     let string_path = try!(String::from_utf8(cstr_path.to_bytes().iter().map(|a| *a).collect()).map_err(|error| ::errors::FfiError::from(error.description())));
     Ok(string_path.split("/").filter(|a| !a.is_empty()).map(|a| a.to_string()).collect())

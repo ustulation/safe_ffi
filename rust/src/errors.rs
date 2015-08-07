@@ -17,7 +17,7 @@
 
 #![allow(unused)] // TODO
 
-const FFI_ERROR_START_RANGE: i32 = ::safe_nfs::errors::NFS_ERROR_START_RANGE - 500;
+const FFI_ERROR_START_RANGE: i32 = ::safe_dns::errors::DNS_ERROR_START_RANGE - 500;
 
 /// Errors during FFI operations
 pub enum FfiError {
@@ -25,6 +25,8 @@ pub enum FfiError {
     ClientError(::safe_client::errors::ClientError),
     /// Errors from safe_nfs
     NfsError(::safe_nfs::errors::NfsError),
+    /// Errors from safe_dns
+    DnsError(::safe_dns::errors::DnsError),
     /// Invalid Path given
     InvalidPath,
     /// Given Path does not exist for the client
@@ -40,6 +42,7 @@ impl ::std::fmt::Debug for FfiError {
         match *self {
             FfiError::ClientError(ref error) => write!(f, "FfiError::ClientError -> {:?}", error),
             FfiError::NfsError(ref error)    => write!(f, "FfiError::NfsError -> {:?}", error),
+            FfiError::DnsError(ref error)    => write!(f, "FfiError::DnsError -> {:?}", error),
             FfiError::InvalidPath            => write!(f, "FfiError::InvalidPath"),
             FfiError::PathNotFound           => write!(f, "FfiError::PathNotFound"),
             FfiError::FileNotFound           => write!(f, "FfiError::FileNotFound"),
@@ -63,6 +66,15 @@ impl From<::safe_nfs::errors::NfsError> for FfiError {
     }
 }
 
+impl From<::safe_dns::errors::DnsError> for FfiError {
+    fn from(error: ::safe_dns::errors::DnsError) -> FfiError {
+        match error {
+            ::safe_dns::errors::DnsError::ClientError(err) => FfiError::ClientError(err),
+            _ => FfiError::DnsError(error),
+        }
+    }
+}
+
 impl<'a> From<&'a str> for FfiError {
     fn from(error: &'a str) -> FfiError {
         FfiError::Unexpected(error.to_string())
@@ -74,6 +86,7 @@ impl Into<i32> for FfiError {
         match self {
             FfiError::ClientError(error) => error.into(),
             FfiError::NfsError(error)    => error.into(),
+            FfiError::DnsError(error)    => error.into(),
             FfiError::InvalidPath        => FFI_ERROR_START_RANGE,
             FfiError::PathNotFound       => FFI_ERROR_START_RANGE - 1,
             FfiError::FileNotFound       => FFI_ERROR_START_RANGE - 2,
