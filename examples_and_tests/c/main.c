@@ -29,13 +29,13 @@ int main() {
         printf(  "----------------------------------------------\n");
         printf("\nCreating path \"/a/\" ...\n");
         const char* absolute_path_a = "/a";
-        int32_t error_code = c_create_sub_directory(absolute_path_a, true);
+        int32_t error_code = c_create_sub_directory(absolute_path_a, false);
         assert(!error_code);
         printf("Successful !\n");
 
         printf("\nCreating path \"/a/last/\" ...\n");
         const char* absolute_path_a_last = "/a/last/";
-        error_code = c_create_sub_directory(absolute_path_a_last, true);
+        error_code = c_create_sub_directory(absolute_path_a_last, false);
         assert(!error_code);
         printf("Successful !\n");
 
@@ -75,13 +75,13 @@ int main() {
         printf(  "----------------------------------------------\n");
         printf("\nCreating path \"/SomeDir/\" ...\n");
         const char* absolute_path_some_dir = "/SomeDir";
-        int32_t error_code = c_create_sub_directory(absolute_path_some_dir, true);
+        int32_t error_code = c_create_sub_directory(absolute_path_some_dir, false);
         assert(!error_code);
         printf("Successful !\n");
 
         printf("\nCreating path \"/SomeDir/service-www/\" ...\n");
         const char* absolute_path_some_dir_www = "/SomeDir/service-www/";
-        error_code = c_create_sub_directory(absolute_path_some_dir_www, true);
+        error_code = c_create_sub_directory(absolute_path_some_dir_www, false);
         assert(!error_code);
         printf("Successful !\n");
 
@@ -94,7 +94,7 @@ int main() {
 
         printf("\nCreating path \"/SomeDir/service-blog/\" ...\n");
         const char* absolute_path_some_dir_blog = "/SomeDir/service-blog/";
-        error_code = c_create_sub_directory(absolute_path_some_dir_blog, true);
+        error_code = c_create_sub_directory(absolute_path_some_dir_blog, false);
         assert(!error_code);
         printf("Successful !\n");
 
@@ -120,7 +120,7 @@ int main() {
 
         printf("\nGetting Home Page for Service \"%s\" of Dns \"%s\" ...\n", service_www, long_name);
         char* content_buffer = malloc(strlen(file_content_www) + 1);
-        error_code = c_get_file_content_from_service_home_dir(long_name, service_www, "HOME.html", true, content_buffer);
+        error_code = c_get_file_content_from_service_home_dir(long_name, service_www, "HOME.html", false, content_buffer);
         assert(!error_code);
         assert(!strcmp(content_buffer, file_content_www));
         printf("Obtained data: \"%s\"\n", content_buffer);
@@ -132,7 +132,7 @@ int main() {
 
         printf("\nGetting Home Page for Service \"%s\" of Dns \"%s\" ...\n", service_blog, long_name);
         content_buffer = malloc(strlen(file_content_blog) + 1);
-        error_code = c_get_file_content_from_service_home_dir(long_name, service_blog, "HOME.html", true, content_buffer);
+        error_code = c_get_file_content_from_service_home_dir(long_name, service_blog, "HOME.html", false, content_buffer);
         assert(!error_code);
         assert(!strcmp(content_buffer, file_content_blog));
         assert(strcmp(content_buffer, file_content_www));

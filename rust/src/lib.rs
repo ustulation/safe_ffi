@@ -265,7 +265,7 @@ mod test {
             unsafe { ::std::ptr::copy(cstring_path.as_ptr(), c_path, path_lenght_for_c) };
         }
 
-        assert_eq!(create_sub_directory(c_path, true), 0); // TODO passing false fails in nfs-crate - UnsuccessfulEncodeDecode
+        assert_eq!(create_sub_directory(c_path, false), 0);
         unsafe { ::libc::free(c_path as *mut ::libc::c_void) };
 
         // --------------------------------------------------------------------
@@ -282,7 +282,7 @@ mod test {
             unsafe { ::std::ptr::copy(cstring_path.as_ptr(), c_path, path_lenght_for_c) };
         }
 
-        assert_eq!(create_sub_directory(c_path, true), 0); // TODO passing false fails in nfs-crate - UnsuccessfulEncodeDecode
+        assert_eq!(create_sub_directory(c_path, false), 0);
         unsafe { ::libc::free(c_path as *mut ::libc::c_void) };
 
         // --------------------------------------------------------------------
@@ -442,7 +442,7 @@ mod test {
 
         // Get specific file for www service
         c_content = unsafe { ::libc::malloc(((*c_size + 1) as usize * ::std::mem::size_of::<::libc::c_int>()) as ::libc::size_t) } as *mut ::libc::c_char;
-        assert_eq!(get_file_content_from_service_home_dir(c_long_name, c_service_name_www, c_file_name, true, c_content), 0); // TODO safe_nfs fails for public
+        assert_eq!(get_file_content_from_service_home_dir(c_long_name, c_service_name_www, c_file_name, false, c_content), 0);
 
         {
             let read_cstr_content = unsafe { ::std::ffi::CStr::from_ptr(c_content) };
@@ -453,7 +453,7 @@ mod test {
 
         // Get specific file for blog service
         c_content = unsafe { ::libc::malloc(((*c_size + 1) as usize * ::std::mem::size_of::<::libc::c_int>()) as ::libc::size_t) } as *mut ::libc::c_char;
-        assert_eq!(get_file_content_from_service_home_dir(c_long_name, c_service_name_blog, c_file_name, true, c_content), 0); // TODO safe_nfs fails for public
+        assert_eq!(get_file_content_from_service_home_dir(c_long_name, c_service_name_blog, c_file_name, false, c_content), 0);
 
         {
             let read_cstr_content = unsafe { ::std::ffi::CStr::from_ptr(c_content) };

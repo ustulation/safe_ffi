@@ -20,4 +20,4 @@ target/
 *.swp
 
 # Manual
-.cargo/*
+.cargo/
