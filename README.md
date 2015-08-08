@@ -5,7 +5,7 @@ This library provides FFI bindings for safe_nfs and safe_dns. It also includes a
 
 All paths start from the repository root. Instructions are tested for Ubuntu-Linux. Modify for other platforms accordingly.
 
-Build static library `libnfs_ffi.a` out of `safe_ffi` crate:
+Build static library `libsafe_ffi.a` out of `safe_ffi` crate:
 ```
 cd repository_root/rust/ -> cargo build --release -> target/release/libsafe_ffi.a
 ```
