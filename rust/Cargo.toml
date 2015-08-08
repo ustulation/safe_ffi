@@ -1,8 +1,8 @@
 [package]
-name          = "nfs-ffi"
+name          = "safe_ffi"
 version       = "0.0.1"
-authors       = ["MaidSafe Developers <dev@maidsafe.net>"]
-description   = "FFI-wrapper over safe_nfs"
+authors       = ["Spandan Sharma <spandan.sharma@maidsafe.net>"]
+description   = "FFI-wrapper over safe_nfs and safe_dns"
 #documentation = "" // TODO
 #repository    = "" // TODO
 readme        = "README.md"
@@ -10,7 +10,7 @@ license       = "GPL-3.0"
 homepage      = "http://maidsafe.net"
 
 [lib]
-name       = "nfs_ffi"
+name       = "safe_ffi"
 crate_type = ["staticlib"]
 
 [dependencies]

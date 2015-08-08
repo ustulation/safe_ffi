@@ -19,7 +19,24 @@
 #include <stdbool.h>
 
 int32_t c_create_sub_directory(const char* absolute_path, bool is_private);
+
 int32_t c_create_file(const char* absolute_path, const char* file_content);
+
 int32_t c_get_file_size(const char* absolute_path, int32_t* obtain_file_size);
+
 int32_t c_get_file_content(const char* absolute_path, char* obtain_file_content);
+
+int32_t c_register_dns(const char* long_name,
+                       const char* service_name,
+                       const char* abs_path_to_service_home_dir);
+
+int32_t c_add_service(const char* long_name,
+                      const char* service_name,
+                      const char* abs_path_to_service_home_dir);
+
+int32_t c_get_file_content_from_service_home_dir(const char* long_name,
+                                                 const char* service_name,
+                                                 const char* file_name,
+                                                 bool is_private,
+                                                 char* obtain_file_content);
 

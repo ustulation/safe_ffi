@@ -15,12 +15,8 @@
 // Please review the Licences for the specific language governing permissions and limitations
 // relating to use of the SAFE Network Software.
 
-#![crate_name = "nfs_ffi"]
+#![crate_name = "safe_ffi"]
 #![crate_type = "lib"]
-// TODO Change this
-#![doc(html_logo_url = "http://maidsafe.net/img/Resources/branding/maidsafe_logo.fab2.png",
-       html_favicon_url = "http://maidsafe.net/img/favicon.ico",
-              html_root_url = "http://dirvine.github.io/dirvine/safe_dns/")]
 
 ///////////////////////////////////////////////////
 //               LINT
@@ -141,9 +137,9 @@ pub extern fn get_file_content(c_path: *const libc::c_char, c_content_buf: *mut 
 
 /// Register Dns
 #[no_mangle]
-pub extern fn register_dns(c_long_name             : *const libc::c_char,
-                           c_service_name          : *const libc::c_char,
-                           c_service_home_dir_path : *const libc::c_char) -> i32 {
+pub extern fn register_dns(c_long_name            : *const libc::c_char,
+                           c_service_name         : *const libc::c_char,
+                           c_service_home_dir_path: *const libc::c_char) -> i32 {
     let client = implementation::get_test_client();
 
     let cstr_service_home_dir_path = unsafe { std::ffi::CStr::from_ptr(c_service_home_dir_path) };
@@ -202,6 +198,40 @@ pub extern fn add_service(c_long_name            : *const libc::c_char,
     0
 }
 
+/// Get file content from service home directory
+#[no_mangle]
+pub fn get_file_content_from_service_home_dir(c_long_name   : *const libc::c_char,
+                                              c_service_name: *const libc::c_char,
+                                              c_file_name   : *const libc::c_char,
+                                              is_private    : bool,
+                                              c_content_buf : *mut libc::c_char) -> i32 {
+    let long_name = ffi_try!(c_char_ptr_to_string(c_long_name));
+    let service_name = ffi_try!(c_char_ptr_to_string(c_service_name));
+    let file_name = ffi_try!(c_char_ptr_to_string(c_file_name));
+
+    let dns_operations = ffi_try!(safe_dns::dns_operations::DnsOperations::new(implementation::get_test_client()));
+    let service_dir_key = ffi_try!(dns_operations.get_service_home_directory_key(&long_name,
+                                                                                 &service_name,
+                                                                                 None));
+    let access_level = if is_private {
+        safe_nfs::AccessLevel::Private
+    } else {
+        safe_nfs::AccessLevel::Public
+    };
+
+    let dir_helper = safe_nfs::helper::directory_helper::DirectoryHelper::new(implementation::get_test_client());
+    let service_dir_listing = ffi_try!(dir_helper.get((&service_dir_key.0, service_dir_key.1),
+                                                      false,
+                                                      &access_level));
+
+    let data_vec = ffi_try!(implementation::get_file_content(&file_name, &service_dir_listing));
+
+    let cstring_content = ffi_try!(std::ffi::CString::new(data_vec).map_err(|error| errors::FfiError::from(error.description())));
+    unsafe { std::ptr::copy(cstring_content.as_ptr(), c_content_buf, cstring_content.as_bytes_with_nul().len()) };
+
+    0
+}
+
 fn c_char_ptr_to_string(c_char_ptr: *const libc::c_char) -> Result<String, errors::FfiError> {
     let cstr = unsafe { std::ffi::CStr::from_ptr(c_char_ptr) };
     Ok(try!(String::from_utf8(cstr.to_bytes().iter().map(|a| *a).collect()).map_err(|error| ::errors::FfiError::from(error.description()))))
@@ -216,6 +246,10 @@ mod test {
     fn create_directories_files_and_read_files() {
         let size_of_c_int = ::std::mem::size_of::<::libc::c_int>();
         let size_of_c_char = ::std::mem::size_of::<::libc::c_char>();
+
+        // --------------------------------------------------------------------------------------------------
+        //                                       NFS Operations
+        // --------------------------------------------------------------------------------------------------
 
         // --------------------------------------------------------------------
         // Create Sub-directory /a - c string size with \0 = 3
@@ -305,15 +339,133 @@ mod test {
             unsafe { ::std::ptr::copy(cstring_path.as_ptr(), c_path, path_lenght_for_c) };
         }
 
-        let c_content = unsafe { ::libc::malloc(((*c_size + 1) as usize * ::std::mem::size_of::<::libc::c_int>()) as ::libc::size_t) } as *mut ::libc::c_char;
+        let mut c_content = unsafe { ::libc::malloc(((*c_size + 1) as usize * ::std::mem::size_of::<::libc::c_int>()) as ::libc::size_t) } as *mut ::libc::c_char;
 
         assert_eq!(get_file_content(c_path, c_content), 0);
 
-        let read_cstr_content = unsafe { ::std::ffi::CStr::from_ptr(c_content) };
-        assert_eq!(&*cstring_content, read_cstr_content);
+        {
+            let read_cstr_content = unsafe { ::std::ffi::CStr::from_ptr(c_content) };
+            assert_eq!(&*cstring_content, read_cstr_content);
+        }
+
+        unsafe { ::libc::free(c_path as *mut ::libc::c_void) };
+        unsafe { ::libc::free(c_content as *mut ::libc::c_void) };
+
+        // --------------------------------------------------------------------------------------------------
+        //                                       DNS Operations
+        // --------------------------------------------------------------------------------------------------
+
+        // --------------------------------------------------------------------
+        // Create Path String /a/last - c string size with \0 = 8
+        // --------------------------------------------------------------------
+        c_path = unsafe { ::libc::malloc(8 * size_of_c_char as ::libc::size_t) } as *mut ::libc::c_char;
+
+        {
+            let cstring_path = eval_result!(::std::ffi::CString::new("/a/last").map_err(|error| ::errors::FfiError::from(error.description())));
+
+            let path_lenght_for_c = cstring_path.as_bytes_with_nul().len();
+            assert_eq!(path_lenght_for_c, 8 * size_of_c_char);
+
+            unsafe { ::std::ptr::copy(cstring_path.as_ptr(), c_path, path_lenght_for_c) };
+        }
+
+        // --------------------------------------------------------------------
+        // Create File Name String file.txt - c string size with \0 = 9
+        // --------------------------------------------------------------------
+        let c_file_name = unsafe { ::libc::malloc(9 * size_of_c_char as ::libc::size_t) } as *mut ::libc::c_char;
+
+        {
+            let cstring_file_name = eval_result!(::std::ffi::CString::new("file.txt").map_err(|error| ::errors::FfiError::from(error.description())));
+
+            let file_name_length_for_c = cstring_file_name.as_bytes_with_nul().len();
+            assert_eq!(file_name_length_for_c, 9 * size_of_c_char);
+
+            unsafe { ::std::ptr::copy(cstring_file_name.as_ptr(), c_file_name, file_name_length_for_c) };
+        }
+
+        let mut long_name = eval_result!(::safe_client::utility::generate_random_vector::<u8>(10));
+        // Avoid internal nulls and ensure valid ASCII (thus valid utf8)
+        for it in long_name.iter_mut() {
+            *it %= 128;
+            if *it == 0 {
+                *it += 1;
+            }
+        }
+        let size_for_c = long_name.len() + 1;
+        // --------------------------------------------------------------------
+        // Create Long Name String <random> - c string size with \0 = <calculate>
+        // --------------------------------------------------------------------
+        let c_long_name = unsafe { ::libc::malloc((size_for_c * size_of_c_char) as ::libc::size_t) } as *mut ::libc::c_char;
+
+        {
+            let cstring_long_name = eval_result!(::std::ffi::CString::new(long_name).map_err(|error| ::errors::FfiError::from(error.description())));
+
+            let long_name_length_for_c = cstring_long_name.as_bytes_with_nul().len();
+            assert_eq!(long_name_length_for_c, size_for_c * size_of_c_char);
+
+            unsafe { ::std::ptr::copy(cstring_long_name.as_ptr(), c_long_name, long_name_length_for_c) };
+        }
+
+        // --------------------------------------------------------------------
+        // Create Service Name String www - c string size with \0 = 4
+        // --------------------------------------------------------------------
+        let c_service_name_www = unsafe { ::libc::malloc(4 * size_of_c_char as ::libc::size_t) } as *mut ::libc::c_char;
+
+        {
+            let cstring_service_name = eval_result!(::std::ffi::CString::new("www").map_err(|error| ::errors::FfiError::from(error.description())));
+
+            let service_name_length_for_c = cstring_service_name.as_bytes_with_nul().len();
+            assert_eq!(service_name_length_for_c, 4 * size_of_c_char);
+
+            unsafe { ::std::ptr::copy(cstring_service_name.as_ptr(), c_service_name_www, service_name_length_for_c) };
+        }
+
+        // --------------------------------------------------------------------
+        // Create Service Name String blog - c string size with \0 = 5
+        // --------------------------------------------------------------------
+        let c_service_name_blog = unsafe { ::libc::malloc(5 * size_of_c_char as ::libc::size_t) } as *mut ::libc::c_char;
+
+        {
+            let cstring_service_name = eval_result!(::std::ffi::CString::new("blog").map_err(|error| ::errors::FfiError::from(error.description())));
+
+            let service_name_length_for_c = cstring_service_name.as_bytes_with_nul().len();
+            assert_eq!(service_name_length_for_c, 5 * size_of_c_char);
+
+            unsafe { ::std::ptr::copy(cstring_service_name.as_ptr(), c_service_name_blog, service_name_length_for_c) };
+        }
+
+        // Register DNS
+        assert_eq!(register_dns(c_long_name, c_service_name_www, c_path), 0);
+
+        // Add Service
+        assert_eq!(add_service(c_long_name, c_service_name_blog, c_path), 0);
+
+        // Get specific file for www service
+        c_content = unsafe { ::libc::malloc(((*c_size + 1) as usize * ::std::mem::size_of::<::libc::c_int>()) as ::libc::size_t) } as *mut ::libc::c_char;
+        assert_eq!(get_file_content_from_service_home_dir(c_long_name, c_service_name_www, c_file_name, true, c_content), 0); // TODO safe_nfs fails for public
+
+        {
+            let read_cstr_content = unsafe { ::std::ffi::CStr::from_ptr(c_content) };
+            assert_eq!(&*cstring_content, read_cstr_content);
+        }
+
+        unsafe { ::libc::free(c_content as *mut ::libc::c_void) };
+
+        // Get specific file for blog service
+        c_content = unsafe { ::libc::malloc(((*c_size + 1) as usize * ::std::mem::size_of::<::libc::c_int>()) as ::libc::size_t) } as *mut ::libc::c_char;
+        assert_eq!(get_file_content_from_service_home_dir(c_long_name, c_service_name_blog, c_file_name, true, c_content), 0); // TODO safe_nfs fails for public
+
+        {
+            let read_cstr_content = unsafe { ::std::ffi::CStr::from_ptr(c_content) };
+            assert_eq!(&*cstring_content, read_cstr_content);
+        }
 
         unsafe { ::libc::free(c_path as *mut ::libc::c_void) };
         unsafe { ::libc::free(c_size as *mut ::libc::c_void) };
         unsafe { ::libc::free(c_content as *mut ::libc::c_void) };
+        unsafe { ::libc::free(c_long_name as *mut ::libc::c_void) };
+        unsafe { ::libc::free(c_file_name as *mut ::libc::c_void) };
+        unsafe { ::libc::free(c_service_name_www as *mut ::libc::c_void) };
+        unsafe { ::libc::free(c_service_name_blog as *mut ::libc::c_void) };
     }
 }
