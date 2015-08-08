@@ -7,7 +7,7 @@ All paths start from the repository root. Instructions are tested for Ubuntu-Lin
 
 Build static library `libnfs_ffi.a` out of `safe_ffi` crate:
 ```
-cd repository_root/rust/ -> cargo build --release -> target/release/libsafe_ffi.a {Note: debug builds do not build static libraries}
+cd repository_root/rust/ -> cargo build --release -> target/release/libsafe_ffi.a
 ```
 Change location:
 ```
