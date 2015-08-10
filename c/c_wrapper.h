@@ -18,6 +18,10 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 int32_t c_create_sub_directory(const char* absolute_path, bool is_private);
 
 int32_t c_create_file(const char* absolute_path, const char* file_content);
@@ -39,4 +43,7 @@ int32_t c_get_file_content_from_service_home_dir(const char* long_name,
                                                  const char* file_name,
                                                  bool is_private,
                                                  char* obtain_file_content);
+#ifdef __cplusplus
+}
+#endif
 
