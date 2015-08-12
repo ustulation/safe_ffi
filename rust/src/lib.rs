@@ -81,7 +81,9 @@ pub extern fn create_sub_directory(c_path: *const libc::c_char, is_private: bool
 /// Create a file. The Name of the file is the final token in the given path. Eg.,
 /// if given path = "/a/b/c/d" then "d" is interpreted as the file intended to be created.
 #[no_mangle]
-pub extern fn create_file(c_path: *const libc::c_char, c_content: *const libc::uint8_t) -> libc::int32_t {
+pub extern fn create_file(c_path   : *const libc::c_char,
+                          c_content: *const libc::uint8_t,
+                          c_size   : libc::size_t) -> libc::int32_t {
     let mut tokens = ffi_try!(implementation::path_tokeniser(c_path));
 
     let file_name = ffi_try!(tokens.pop().ok_or(errors::FfiError::InvalidPath));
@@ -92,8 +94,7 @@ pub extern fn create_file(c_path: *const libc::c_char, c_content: *const libc::u
                                                  vec![],
                                                  parent_dir_listing));
 
-    let cstr_content = unsafe { std::ffi::CStr::from_ptr(c_content) };
-    writer.write(cstr_content.to_bytes(), 0);
+    writer.write(implementation::c_uint8_ptr_to_vec(c_content, c_size), 0);
     let _ = ffi_try!(writer.close());
 
     0

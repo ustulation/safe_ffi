@@ -38,8 +38,12 @@ pub fn get_test_client() -> ::std::sync::Arc<::std::sync::Mutex<::safe_client::c
     }
 }
 
-pub fn c_uint8_ptr_to_vec(c_uint8_ptr: *const ::libc::uint8_t, c_size: ::libc::size_t) -> Result<String, ::errors::FfiError> {
-    ;
+pub fn c_uint8_ptr_to_vec(c_uint8_ptr: *const ::libc::uint8_t, c_size: ::libc::size_t) -> Vec<u8> {
+    unsafe { ::std::slice::from_raw_parts(c_uint8_ptr, c_size).to_vec() }
+}
+
+pub fn c_uint8_ptr_to_string(c_uint8_ptr: *const ::libc::uint8_t, c_size: ::libc::size_t) -> Result<String, ::errors::FfiError> {
+    Ok(try!(String::from_utf8(c_uint8_ptr_to_vec(c_uint8_ptr, c_size)).map_err(|error| ::errors::FfiError::from(error.description()))))
 }
 
 pub fn c_char_ptr_to_string(c_char_ptr: *const ::libc::c_char) -> Result<String, ::errors::FfiError> {

@@ -11,7 +11,7 @@ homepage      = "http://maidsafe.net"
 
 [lib]
 name       = "safe_ffi"
-crate_type = ["dylib"]
+crate_type = ["staticlib"]
 
 [dependencies]
 # ---- Maidsafe ----
