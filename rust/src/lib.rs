@@ -101,8 +101,10 @@ pub extern fn create_file(c_path   : *const libc::c_char,
 }
 
 /// Get the size of the file. c_size should be properly and sufficiently pre-allocated.
+/// The Name of the file is the final token in the given path. Eg.,
+/// if given path = "/a/b/c/d" then "d" is interpreted as the file intended to be read.
 #[no_mangle]
-pub extern fn get_file_size(c_path: *const libc::c_char, c_size: *mut libc::c_int) -> libc::int32_t {
+pub extern fn get_file_size(c_path: *const libc::c_char, c_size: *mut libc::size_t) -> libc::int32_t {
     let mut tokens = ffi_try!(implementation::path_tokeniser(c_path));
 
     let file_name = ffi_try!(tokens.pop().ok_or(errors::FfiError::InvalidPath));
@@ -110,7 +112,7 @@ pub extern fn get_file_size(c_path: *const libc::c_char, c_size: *mut libc::c_in
 
     let size = ffi_try!(implementation::get_file_size(&file_name, &parent_dir_listing));
 
-    unsafe { std::ptr::write(c_size, size as libc::c_int) };
+    unsafe { std::ptr::write(c_size, size) };
 
     0
 }
@@ -119,15 +121,14 @@ pub extern fn get_file_size(c_path: *const libc::c_char, c_size: *mut libc::c_in
 /// if given path = "/a/b/c/d" then "d" is interpreted as the file intended to be read.
 /// c_content_buf should be properly and sufficiently pre-allocated.
 #[no_mangle]
-pub extern fn get_file_content(c_path: *const libc::c_char, c_content_buf: *mut libc::c_char) -> libc::int32_t {
+pub extern fn get_file_content(c_path: *const libc::c_char, c_content_buf: *mut libc::uint8_t) -> libc::int32_t {
     let mut tokens = ffi_try!(implementation::path_tokeniser(c_path));
 
     let file_name = ffi_try!(tokens.pop().ok_or(errors::FfiError::InvalidPath));
     let parent_dir_listing = ffi_try!(implementation::get_final_subdirectory(&tokens));
     let data_vec = ffi_try!(implementation::get_file_content(&file_name, &parent_dir_listing));
 
-    let cstring_content = ffi_try!(std::ffi::CString::new(data_vec).map_err(|error| errors::FfiError::from(error.description())));
-    unsafe { std::ptr::copy(cstring_content.as_ptr(), c_content_buf, cstring_content.as_bytes_with_nul().len()) };
+    unsafe { std::ptr::copy(data_vec.as_ptr(), c_content_buf, data_vec.len()) };
 
     0
 }
