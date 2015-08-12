@@ -17,13 +17,15 @@ swig -python -outcurrentdir ../interface.i
 Build shared library `libc_wrapper.so` out of `c_wrapper.c` file (libsodium needs to be compiled with fPIC enabled):
 ```
 gcc -c -std=c99 -Wall -Werror -fPIC ../../../c/c_wrapper.c ./interface_wrap.c -I/usr/include/python2.7
-gcc -shared -o _python_sample.so c_wrapper.o interface_wrap.o -L./../../../rust/target/release -lsafe_ffi -lsodium
+gcc -shared -o _safe_python.so c_wrapper.o interface_wrap.o -L./../../../rust/target/release -lsafe_ffi -lsodium
 ```
 Call code from python:
 ```
 export LD_LIBRARY_PATH="${LD_LIBRARY_PATH}./;"
 python
-import python_sample
-python_sample.c_create_sub_directory("/zero", True)
+>> import safe_python
+>> safe_python.c_create_sub_directory("/zero", True)
+>> safe_python.c_create_sub_directory("/zero/one", False)
+>> exit()
 ```
 // TODO this part is incomplete .. need to write more detailed documentation

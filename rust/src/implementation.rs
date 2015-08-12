@@ -42,10 +42,6 @@ pub fn c_uint8_ptr_to_vec(c_uint8_ptr: *const ::libc::uint8_t, c_size: ::libc::s
     unsafe { ::std::slice::from_raw_parts(c_uint8_ptr, c_size as usize).to_vec() }
 }
 
-pub fn c_uint8_ptr_to_string(c_uint8_ptr: *const ::libc::uint8_t, c_size: ::libc::size_t) -> Result<String, ::errors::FfiError> {
-    Ok(try!(String::from_utf8(c_uint8_ptr_to_vec(c_uint8_ptr, c_size)).map_err(|error| ::errors::FfiError::from(error.description()))))
-}
-
 pub fn c_char_ptr_to_string(c_char_ptr: *const ::libc::c_char) -> Result<String, ::errors::FfiError> {
     let cstr = unsafe { ::std::ffi::CStr::from_ptr(c_char_ptr) };
     Ok(try!(String::from_utf8(cstr.to_bytes().iter().map(|a| *a).collect()).map_err(|error| ::errors::FfiError::from(error.description()))))
@@ -101,9 +97,9 @@ mod test {
                             "d".to_string(),
                             "ef".to_string()];
 
-        let tokenised_0 = eval_result!(path_tokeniser(&path_0));
-        let tokenised_1 = eval_result!(path_tokeniser(&path_1));
-        let tokenised_2 = eval_result!(path_tokeniser(&path_2));
+        let tokenised_0 = eval_result!(path_tokeniser(path_0.as_ptr()));
+        let tokenised_1 = eval_result!(path_tokeniser(path_1.as_ptr()));
+        let tokenised_2 = eval_result!(path_tokeniser(path_2.as_ptr()));
 
         assert_eq!(tokenised_0, expected);
         assert_eq!(tokenised_1, expected);

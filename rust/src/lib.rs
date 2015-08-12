@@ -45,8 +45,6 @@ extern crate safe_dns;
 extern crate sodiumoxide;
 #[macro_use] extern crate safe_client;
 
-use std::error::Error;
-
 #[macro_use] mod macros;
 
 mod errors;
@@ -94,7 +92,7 @@ pub extern fn create_file(c_path   : *const libc::c_char,
                                                  vec![],
                                                  parent_dir_listing));
 
-    writer.write(implementation::c_uint8_ptr_to_vec(c_content, c_size), 0);
+    writer.write(&implementation::c_uint8_ptr_to_vec(c_content, c_size), 0);
     let _ = ffi_try!(writer.close());
 
     0
@@ -200,7 +198,7 @@ pub fn get_file_content_from_service_home_dir(c_long_name   : *const libc::c_cha
                                               c_service_name: *const libc::c_char,
                                               c_file_name   : *const libc::c_char,
                                               is_private    : bool,
-                                              c_content_buf : *mut libc::c_char) -> libc::int32_t {
+                                              c_content_buf : *mut libc::uint8_t) -> libc::int32_t {
     let long_name = ffi_try!(implementation::c_char_ptr_to_string(c_long_name));
     let service_name = ffi_try!(implementation::c_char_ptr_to_string(c_service_name));
     let file_name = ffi_try!(implementation::c_char_ptr_to_string(c_file_name));
@@ -222,8 +220,7 @@ pub fn get_file_content_from_service_home_dir(c_long_name   : *const libc::c_cha
 
     let data_vec = ffi_try!(implementation::get_file_content(&file_name, &service_dir_listing));
 
-    let cstring_content = ffi_try!(std::ffi::CString::new(data_vec).map_err(|error| errors::FfiError::from(error.description())));
-    unsafe { std::ptr::copy(cstring_content.as_ptr(), c_content_buf, cstring_content.as_bytes_with_nul().len()) };
+    unsafe { std::ptr::copy(data_vec.as_ptr(), c_content_buf, data_vec.len()) };
 
     0
 }
@@ -292,7 +289,7 @@ mod test {
             unsafe { ::std::ptr::copy(cstring_path.as_ptr(), c_path, path_lenght_for_c) };
         }
 
-        assert_eq!(create_file(c_path, cstring_content.as_ptr()), 0);
+        assert_eq!(create_file(c_path, cstring_content.as_ptr() as *const ::libc::uint8_t, cstring_content.as_bytes_with_nul().len() as ::libc::size_t), 0);
         unsafe { ::libc::free(c_path as *mut ::libc::c_void) };
 
         // --------------------------------------------------------------------
@@ -309,10 +306,10 @@ mod test {
             unsafe { ::std::ptr::copy(cstring_path.as_ptr(), c_path, path_lenght_for_c) };
         }
 
-        let c_size = unsafe { ::libc::malloc(1 * size_of_c_int as ::libc::size_t) } as *mut ::libc::c_int;
+        let c_size = unsafe { ::libc::malloc(1 * size_of_c_int as ::libc::size_t) } as *mut ::libc::size_t;
 
         assert_eq!(get_file_size(c_path, c_size), 0);
-        unsafe { assert_eq!(*c_size as usize, cstring_content.as_bytes().len()) };
+        unsafe { assert_eq!(*c_size as usize, cstring_content.as_bytes_with_nul().len()) };
 
         unsafe { ::libc::free(c_path as *mut ::libc::c_void) };
 
@@ -330,12 +327,12 @@ mod test {
             unsafe { ::std::ptr::copy(cstring_path.as_ptr(), c_path, path_lenght_for_c) };
         }
 
-        let mut c_content = unsafe { ::libc::malloc(((*c_size + 1) as usize * ::std::mem::size_of::<::libc::c_int>()) as ::libc::size_t) } as *mut ::libc::c_char;
+        let mut c_content = unsafe { ::libc::malloc((*c_size as usize * ::std::mem::size_of::<::libc::c_int>()) as ::libc::size_t) } as *mut ::libc::uint8_t;
 
         assert_eq!(get_file_content(c_path, c_content), 0);
 
         {
-            let read_cstr_content = unsafe { ::std::ffi::CStr::from_ptr(c_content) };
+            let read_cstr_content = unsafe { ::std::ffi::CStr::from_ptr(c_content as *const ::libc::c_char) };
             assert_eq!(&*cstring_content, read_cstr_content);
         }
 
@@ -432,22 +429,22 @@ mod test {
         assert_eq!(add_service(c_long_name, c_service_name_blog, c_path), 0);
 
         // Get specific file for www service
-        c_content = unsafe { ::libc::malloc(((*c_size + 1) as usize * ::std::mem::size_of::<::libc::c_int>()) as ::libc::size_t) } as *mut ::libc::c_char;
+        c_content = unsafe { ::libc::malloc((*c_size as usize * ::std::mem::size_of::<::libc::c_int>()) as ::libc::size_t) } as *mut ::libc::uint8_t;
         assert_eq!(get_file_content_from_service_home_dir(c_long_name, c_service_name_www, c_file_name, false, c_content), 0);
 
         {
-            let read_cstr_content = unsafe { ::std::ffi::CStr::from_ptr(c_content) };
+            let read_cstr_content = unsafe { ::std::ffi::CStr::from_ptr(c_content as *const ::libc::c_char) };
             assert_eq!(&*cstring_content, read_cstr_content);
         }
 
         unsafe { ::libc::free(c_content as *mut ::libc::c_void) };
 
         // Get specific file for blog service
-        c_content = unsafe { ::libc::malloc(((*c_size + 1) as usize * ::std::mem::size_of::<::libc::c_int>()) as ::libc::size_t) } as *mut ::libc::c_char;
+        c_content = unsafe { ::libc::malloc((*c_size as usize * ::std::mem::size_of::<::libc::c_int>()) as ::libc::size_t) } as *mut ::libc::uint8_t;
         assert_eq!(get_file_content_from_service_home_dir(c_long_name, c_service_name_blog, c_file_name, false, c_content), 0);
 
         {
-            let read_cstr_content = unsafe { ::std::ffi::CStr::from_ptr(c_content) };
+            let read_cstr_content = unsafe { ::std::ffi::CStr::from_ptr(c_content as *const ::libc::c_char) };
             assert_eq!(&*cstring_content, read_cstr_content);
         }
 
