@@ -15,7 +15,7 @@ if (error_code != 0) {
 console.log("Successful !")
 
 console.log("Creating path \"/zero/one/SomeFile.log\" ...")
-error_code = abc.c_create_file("/zero/one/SomeFile.log", "This is the content of the file.")
+error_code = abc.c_create_file("/zero/one/SomeFile.log", "This is the content of the file.", 33)
 if (error_code != 0) {
     throw "Unsucessful .. Error: " + error_code
 }

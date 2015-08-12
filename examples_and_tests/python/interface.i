@@ -1,4 +1,4 @@
-%module python_sample
+%module safe_python
 %{
 #include "../../../c/c_wrapper.h"
 %}

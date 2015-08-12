@@ -16,19 +16,25 @@
 // relating to use of the SAFE Network Software.
 
 #include <stdint.h>
+#include <stddef.h>
 #include <stdbool.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-int32_t c_create_sub_directory(const char* absolute_path, bool is_private);
+int32_t c_create_sub_directory(const char* absolute_path,
+                               bool is_private);
 
-int32_t c_create_file(const char* absolute_path, const char* file_content);
+int32_t c_create_file(const char* absolute_path,
+                      const uint8_t* file_content,
+                      const size_t content_size);
 
-int32_t c_get_file_size(const char* absolute_path, int32_t* obtain_file_size);
+int32_t c_get_file_size(const char* absolute_path,
+                        size_t* obtain_file_size);
 
-int32_t c_get_file_content(const char* absolute_path, char* obtain_file_content);
+int32_t c_get_file_content(const char* absolute_path,
+                           uint8_t* obtain_file_content);
 
 int32_t c_register_dns(const char* long_name,
                        const char* service_name,
@@ -42,7 +48,7 @@ int32_t c_get_file_content_from_service_home_dir(const char* long_name,
                                                  const char* service_name,
                                                  const char* file_name,
                                                  bool is_private,
-                                                 char* obtain_file_content);
+                                                 uint8_t* obtain_file_content);
 #ifdef __cplusplus
 }
 #endif
