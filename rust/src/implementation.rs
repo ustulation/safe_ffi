@@ -38,8 +38,17 @@ pub fn get_test_client() -> ::std::sync::Arc<::std::sync::Mutex<::safe_client::c
     }
 }
 
-pub fn path_tokeniser(cstr_path: &::std::ffi::CStr) -> Result<Vec<String>, ::errors::FfiError> {
-    let string_path = try!(String::from_utf8(cstr_path.to_bytes().iter().map(|a| *a).collect()).map_err(|error| ::errors::FfiError::from(error.description())));
+pub fn c_uint8_ptr_to_vec(c_uint8_ptr: *const ::libc::uint8_t, c_size: ::libc::size_t) -> Result<String, ::errors::FfiError> {
+    ;
+}
+
+pub fn c_char_ptr_to_string(c_char_ptr: *const ::libc::c_char) -> Result<String, ::errors::FfiError> {
+    let cstr = unsafe { ::std::ffi::CStr::from_ptr(c_char_ptr) };
+    Ok(try!(String::from_utf8(cstr.to_bytes().iter().map(|a| *a).collect()).map_err(|error| ::errors::FfiError::from(error.description()))))
+}
+
+pub fn path_tokeniser(c_path: *const ::libc::c_char) -> Result<Vec<String>, ::errors::FfiError> {
+    let string_path = try!(c_char_ptr_to_string(c_path));
     Ok(string_path.split("/").filter(|a| !a.is_empty()).map(|a| a.to_string()).collect())
 }
 

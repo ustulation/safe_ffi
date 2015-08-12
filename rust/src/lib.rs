@@ -55,9 +55,8 @@ mod implementation;
 /// Create a subdirectory. The Name of the subdirectory is the final token in the given path. Eg.,
 /// if given path = "/a/b/c/d" then "d" is interpreted as the subdirectory intended to be created.
 #[no_mangle]
-pub extern fn create_sub_directory(c_path: *const libc::c_char, is_private: bool) -> i32 {
-    let cstr_path = unsafe { std::ffi::CStr::from_ptr(c_path) };
-    let mut tokens = ffi_try!(implementation::path_tokeniser(cstr_path));
+pub extern fn create_sub_directory(c_path: *const libc::c_char, is_private: bool) -> libc::int32_t {
+    let mut tokens = ffi_try!(implementation::path_tokeniser(c_path));
 
     let sub_dir_name = ffi_try!(tokens.pop().ok_or(errors::FfiError::InvalidPath));
     let mut parent_dir_listing = ffi_try!(implementation::get_final_subdirectory(&tokens));
@@ -82,9 +81,8 @@ pub extern fn create_sub_directory(c_path: *const libc::c_char, is_private: bool
 /// Create a file. The Name of the file is the final token in the given path. Eg.,
 /// if given path = "/a/b/c/d" then "d" is interpreted as the file intended to be created.
 #[no_mangle]
-pub extern fn create_file(c_path: *const libc::c_char, c_content: *const libc::c_char) -> i32 {
-    let cstr_path = unsafe { std::ffi::CStr::from_ptr(c_path) };
-    let mut tokens = ffi_try!(implementation::path_tokeniser(cstr_path));
+pub extern fn create_file(c_path: *const libc::c_char, c_content: *const libc::uint8_t) -> libc::int32_t {
+    let mut tokens = ffi_try!(implementation::path_tokeniser(c_path));
 
     let file_name = ffi_try!(tokens.pop().ok_or(errors::FfiError::InvalidPath));
     let parent_dir_listing = ffi_try!(implementation::get_final_subdirectory(&tokens));
@@ -103,9 +101,8 @@ pub extern fn create_file(c_path: *const libc::c_char, c_content: *const libc::c
 
 /// Get the size of the file. c_size should be properly and sufficiently pre-allocated.
 #[no_mangle]
-pub extern fn get_file_size(c_path: *const libc::c_char, c_size: *mut libc::c_int) -> i32 {
-    let cstr_path = unsafe { std::ffi::CStr::from_ptr(c_path) };
-    let mut tokens = ffi_try!(implementation::path_tokeniser(cstr_path));
+pub extern fn get_file_size(c_path: *const libc::c_char, c_size: *mut libc::c_int) -> libc::int32_t {
+    let mut tokens = ffi_try!(implementation::path_tokeniser(c_path));
 
     let file_name = ffi_try!(tokens.pop().ok_or(errors::FfiError::InvalidPath));
     let parent_dir_listing = ffi_try!(implementation::get_final_subdirectory(&tokens));
@@ -121,9 +118,8 @@ pub extern fn get_file_size(c_path: *const libc::c_char, c_size: *mut libc::c_in
 /// if given path = "/a/b/c/d" then "d" is interpreted as the file intended to be read.
 /// c_content_buf should be properly and sufficiently pre-allocated.
 #[no_mangle]
-pub extern fn get_file_content(c_path: *const libc::c_char, c_content_buf: *mut libc::c_char) -> i32 {
-    let cstr_path = unsafe { std::ffi::CStr::from_ptr(c_path) };
-    let mut tokens = ffi_try!(implementation::path_tokeniser(cstr_path));
+pub extern fn get_file_content(c_path: *const libc::c_char, c_content_buf: *mut libc::c_char) -> libc::int32_t {
+    let mut tokens = ffi_try!(implementation::path_tokeniser(c_path));
 
     let file_name = ffi_try!(tokens.pop().ok_or(errors::FfiError::InvalidPath));
     let parent_dir_listing = ffi_try!(implementation::get_final_subdirectory(&tokens));
@@ -139,17 +135,16 @@ pub extern fn get_file_content(c_path: *const libc::c_char, c_content_buf: *mut 
 #[no_mangle]
 pub extern fn register_dns(c_long_name            : *const libc::c_char,
                            c_service_name         : *const libc::c_char,
-                           c_service_home_dir_path: *const libc::c_char) -> i32 {
+                           c_service_home_dir_path: *const libc::c_char) -> libc::int32_t {
     let client = implementation::get_test_client();
 
-    let cstr_service_home_dir_path = unsafe { std::ffi::CStr::from_ptr(c_service_home_dir_path) };
-    let tokens = ffi_try!(implementation::path_tokeniser(cstr_service_home_dir_path));
+    let tokens = ffi_try!(implementation::path_tokeniser(c_service_home_dir_path));
 
     let service_home_dir_listing = ffi_try!(implementation::get_final_subdirectory(&tokens));
     let service_home_dir_key = service_home_dir_listing.get_info().get_key();
 
-    let long_name = ffi_try!(c_char_ptr_to_string(c_long_name));
-    let service_name = ffi_try!(c_char_ptr_to_string(c_service_name));
+    let long_name = ffi_try!(implementation::c_char_ptr_to_string(c_long_name));
+    let service_name = ffi_try!(implementation::c_char_ptr_to_string(c_service_name));
 
     let (public_encryption_key, secret_encryption_key) = sodiumoxide::crypto::box_::gen_keypair();
     let public_signing_key = client.lock().unwrap().get_public_signing_key().clone();
@@ -173,17 +168,16 @@ pub extern fn register_dns(c_long_name            : *const libc::c_char,
 #[no_mangle]
 pub extern fn add_service(c_long_name            : *const libc::c_char,
                           c_service_name         : *const libc::c_char,
-                          c_service_home_dir_path: *const libc::c_char) -> i32 {
+                          c_service_home_dir_path: *const libc::c_char) -> libc::int32_t {
     let client = implementation::get_test_client();
 
-    let cstr_service_home_dir_path = unsafe { std::ffi::CStr::from_ptr(c_service_home_dir_path) };
-    let tokens = ffi_try!(implementation::path_tokeniser(cstr_service_home_dir_path));
+    let tokens = ffi_try!(implementation::path_tokeniser(c_service_home_dir_path));
 
     let service_home_dir_listing = ffi_try!(implementation::get_final_subdirectory(&tokens));
     let service_home_dir_key = service_home_dir_listing.get_info().get_key();
 
-    let long_name = ffi_try!(c_char_ptr_to_string(c_long_name));
-    let service_name = ffi_try!(c_char_ptr_to_string(c_service_name));
+    let long_name = ffi_try!(implementation::c_char_ptr_to_string(c_long_name));
+    let service_name = ffi_try!(implementation::c_char_ptr_to_string(c_service_name));
 
     let secret_signing_key = client.lock().unwrap().get_secret_signing_key().clone();
 
@@ -204,10 +198,10 @@ pub fn get_file_content_from_service_home_dir(c_long_name   : *const libc::c_cha
                                               c_service_name: *const libc::c_char,
                                               c_file_name   : *const libc::c_char,
                                               is_private    : bool,
-                                              c_content_buf : *mut libc::c_char) -> i32 {
-    let long_name = ffi_try!(c_char_ptr_to_string(c_long_name));
-    let service_name = ffi_try!(c_char_ptr_to_string(c_service_name));
-    let file_name = ffi_try!(c_char_ptr_to_string(c_file_name));
+                                              c_content_buf : *mut libc::c_char) -> libc::int32_t {
+    let long_name = ffi_try!(implementation::c_char_ptr_to_string(c_long_name));
+    let service_name = ffi_try!(implementation::c_char_ptr_to_string(c_service_name));
+    let file_name = ffi_try!(implementation::c_char_ptr_to_string(c_file_name));
 
     let dns_operations = ffi_try!(safe_dns::dns_operations::DnsOperations::new(implementation::get_test_client()));
     let service_dir_key = ffi_try!(dns_operations.get_service_home_directory_key(&long_name,
@@ -230,11 +224,6 @@ pub fn get_file_content_from_service_home_dir(c_long_name   : *const libc::c_cha
     unsafe { std::ptr::copy(cstring_content.as_ptr(), c_content_buf, cstring_content.as_bytes_with_nul().len()) };
 
     0
-}
-
-fn c_char_ptr_to_string(c_char_ptr: *const libc::c_char) -> Result<String, errors::FfiError> {
-    let cstr = unsafe { std::ffi::CStr::from_ptr(c_char_ptr) };
-    Ok(try!(String::from_utf8(cstr.to_bytes().iter().map(|a| *a).collect()).map_err(|error| ::errors::FfiError::from(error.description()))))
 }
 
 #[cfg(test)]
