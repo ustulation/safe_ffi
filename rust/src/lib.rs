@@ -192,6 +192,43 @@ pub extern fn add_service(c_long_name            : *const libc::c_char,
     0
 }
 
+// TODO The follwoing two functions are a little rough for this iteration. It is intended to
+// ultimately accept the complete path to the file, root being cosidered the
+// service-home-directory.
+
+/// Get file size from service home directory
+#[no_mangle]
+pub fn get_file_size_from_service_home_dir(c_long_name   : *const libc::c_char,
+                                           c_service_name: *const libc::c_char,
+                                           c_file_name   : *const libc::c_char,
+                                           is_private    : bool,
+                                           c_content_size: *mut libc::size_t) -> libc::int32_t {
+    let long_name = ffi_try!(implementation::c_char_ptr_to_string(c_long_name));
+    let service_name = ffi_try!(implementation::c_char_ptr_to_string(c_service_name));
+    let file_name = ffi_try!(implementation::c_char_ptr_to_string(c_file_name));
+
+    let dns_operations = ffi_try!(safe_dns::dns_operations::DnsOperations::new(implementation::get_test_client()));
+    let service_dir_key = ffi_try!(dns_operations.get_service_home_directory_key(&long_name,
+                                                                                 &service_name,
+                                                                                 None));
+    let access_level = if is_private {
+        safe_nfs::AccessLevel::Private
+    } else {
+        safe_nfs::AccessLevel::Public
+    };
+
+    let dir_helper = safe_nfs::helper::directory_helper::DirectoryHelper::new(implementation::get_test_client());
+    let service_dir_listing = ffi_try!(dir_helper.get((&service_dir_key.0, service_dir_key.1),
+                                                      false,
+                                                      &access_level));
+
+    let file_size = ffi_try!(implementation::get_file_size(&file_name, &service_dir_listing));
+
+    unsafe { std::ptr::write(c_content_size, file_size) };
+
+    0
+}
+
 /// Get file content from service home directory
 #[no_mangle]
 pub fn get_file_content_from_service_home_dir(c_long_name   : *const libc::c_char,

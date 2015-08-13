@@ -38,6 +38,12 @@ extern int32_t add_service(const char* long_name,
                            const char* service_name,
                            const char* abs_path_to_service_home_dir);
 
+extern int32_t get_file_size_from_service_home_dir(const char* long_name,
+                                                   const char* service_name,
+                                                   const char* file_name,
+                                                   bool is_private,
+                                                   size_t* obtain_file_size);
+
 extern int32_t get_file_content_from_service_home_dir(const char* long_name,
                                                       const char* service_name,
                                                       const char* file_name,
@@ -75,6 +81,14 @@ int32_t c_add_service(const char* long_name,
                       const char* service_name,
                       const char* abs_path_to_service_home_dir) {
     return add_service(long_name, service_name, abs_path_to_service_home_dir);
+}
+
+int32_t c_get_file_size_from_service_home_dir(const char* long_name,
+                                              const char* service_name,
+                                              const char* file_name,
+                                              bool is_private,
+                                              size_t* obtain_file_size) {
+    return get_file_size_from_service_home_dir(long_name, service_name, file_name, is_private, obtain_file_size);
 }
 
 int32_t c_get_file_content_from_service_home_dir(const char* long_name,
