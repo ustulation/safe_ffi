@@ -1,5 +1,5 @@
-# FireFox
-Access the library from FireFox (js-ctypes).
+# Firefox
+Access the library from Firefox (js-ctypes).
 
 ## Build Instructions:
 
