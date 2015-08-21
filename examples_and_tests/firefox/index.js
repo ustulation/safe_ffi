@@ -51,20 +51,20 @@ var handleIconClick = function(state) {
                                                              ctypes.uint8_t.ptr);
 
   console.log("=========== Dns Test Start =============");
-  console.log('Getting Home Page INDEX.html file size for "safe:www.spandan.net" ...');
+  console.log('Getting Home Page INDEX.html file size for "safe:www.spandan.com" ...');
   let dns_file_size = ctypes.size_t(0);
   let dns_file_size_address = dns_file_size.address();
-  let error_code = c_get_file_size_from_service_home_dir("123456.com", "www", "index.html", false, dns_file_size_address);
+  let error_code = c_get_file_size_from_service_home_dir("spandan.com", "www", "index.html", false, dns_file_size_address);
   if (error_code == 0) {
     console.log("File size:", ctypes.cast(dns_file_size, ctypes.uint32_t).value);
     console.log("Successful !");
   } else console.log("Error-code:", error_code);
 
-  console.log('Getting Home Page for "safe:www.spandan.net" ...');
+  console.log('Getting Home Page for "safe:www.spandan.com" ...');
   let DnsUint8Array_t = ctypes.ArrayType(ctypes.uint8_t, dns_file_size.value);
   let dns_file_content = DnsUint8Array_t();
   console.log("Allocated length:", dns_file_content.length);
-  error_code = c_get_file_content_from_service_home_dir("123456.com", "www", "index.html", false, dns_file_content.addressOfElement(0));
+  error_code = c_get_file_content_from_service_home_dir("spandan.com", "www", "index.html", false, dns_file_content.addressOfElement(0));
   if (error_code == 0) {
     console.log("File content:", dns_file_content.readString());
     console.log("Successful !");
