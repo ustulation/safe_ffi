@@ -59,19 +59,13 @@ impl From<::safe_client::errors::ClientError> for FfiError {
 
 impl From<::safe_nfs::errors::NfsError> for FfiError {
     fn from(error: ::safe_nfs::errors::NfsError) -> FfiError {
-        match error {
-            ::safe_nfs::errors::NfsError::ClientError(err) => FfiError::ClientError(err),
-            _ => FfiError::NfsError(error),
-        }
+        FfiError::NfsError(error)
     }
 }
 
 impl From<::safe_dns::errors::DnsError> for FfiError {
     fn from(error: ::safe_dns::errors::DnsError) -> FfiError {
-        match error {
-            ::safe_dns::errors::DnsError::ClientError(err) => FfiError::ClientError(err),
-            _ => FfiError::DnsError(error),
-        }
+        FfiError::DnsError(error)
     }
 }
 

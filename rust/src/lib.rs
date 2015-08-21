@@ -40,6 +40,7 @@ unused_qualifications, variant_size_differences)]
 //! [Project github page](https://github.com/maidsafe/safe_dns)
 
 extern crate libc;
+extern crate routing;
 extern crate safe_nfs;
 extern crate safe_dns;
 extern crate sodiumoxide;
@@ -147,8 +148,8 @@ pub extern fn register_dns(c_long_name            : *const libc::c_char,
     let service_name = ffi_try!(implementation::c_char_ptr_to_string(c_service_name));
 
     let (public_encryption_key, secret_encryption_key) = sodiumoxide::crypto::box_::gen_keypair();
-    let public_signing_key = client.lock().unwrap().get_public_signing_key().clone();
-    let secret_signing_key = client.lock().unwrap().get_secret_signing_key().clone();
+    let public_signing_key = ffi_try!(client.lock().unwrap().get_public_signing_key()).clone();
+    let secret_signing_key = ffi_try!(client.lock().unwrap().get_secret_signing_key()).clone();
 
     let dns_operations = ffi_try!(safe_dns::dns_operations::DnsOperations::new(client.clone()));
     let record_struct_data = ffi_try!(dns_operations.register_dns(long_name,
@@ -159,7 +160,7 @@ pub extern fn register_dns(c_long_name            : *const libc::c_char,
                                                                   &secret_signing_key,
                                                                   None));
 
-    ffi_try!(client.lock().unwrap().put(record_struct_data.name(), safe_client::client::Data::StructuredData(record_struct_data)));
+    client.lock().unwrap().put(routing::data::Data::StructuredData(record_struct_data), None);
 
     0
 }
@@ -179,7 +180,7 @@ pub extern fn add_service(c_long_name            : *const libc::c_char,
     let long_name = ffi_try!(implementation::c_char_ptr_to_string(c_long_name));
     let service_name = ffi_try!(implementation::c_char_ptr_to_string(c_service_name));
 
-    let secret_signing_key = client.lock().unwrap().get_secret_signing_key().clone();
+    let secret_signing_key = ffi_try!(client.lock().unwrap().get_secret_signing_key()).clone();
 
     let dns_operations = ffi_try!(safe_dns::dns_operations::DnsOperations::new(client.clone()));
     let record_struct_data = ffi_try!(dns_operations.add_service(&long_name,
@@ -187,7 +188,7 @@ pub extern fn add_service(c_long_name            : *const libc::c_char,
                                                                  &secret_signing_key,
                                                                  None));
 
-    ffi_try!(client.lock().unwrap().post(record_struct_data.name(), safe_client::client::Data::StructuredData(record_struct_data)));
+    client.lock().unwrap().post(routing::data::Data::StructuredData(record_struct_data), None);
 
     0
 }
