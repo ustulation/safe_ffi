@@ -19,7 +19,7 @@ jpm run -b /usr/bin/firefox
 Now click the safe-logo-icon to run the tests.
 
 ### For Windows:
-The problem with Windows is that Firefox does not yet (as i write this) support a 64-bit version. So libraries need to be compiled with 32 bit Rust and MinGW. 32 bit Rust however has problems compiling/downloading packages (during the time this was written) which also manifests as failing `Appveyor` builds for other crates. Then there is a 64-bit Developers' Edition for Firefox which can be downloaded and works fine with the 64-bit shared-objects. For this test 64-bit for Windows under `English(British)` was downloaded from [link](https://www.mozilla.org/en-US/firefox/developer/all/).
+The problem with Windows is that Firefox does not yet (as i write this) support a 64-bit version. So libraries need to be compiled with 32 bit Rust and MinGW. 32 bit Rust however has problems compiling/downloading packages (during the time this was written) which also manifests as failing `Appveyor` builds for other crates. Then there is a 64-bit Developers' Edition for Firefox which can be downloaded and works fine with the 64-bit shared-objects. For this test 64-bit for Windows under `English(British)` was downloaded from [link-to-64-bit-Firefox](https://www.mozilla.org/en-US/firefox/developer/all/).
 
 (mingw-w64 was used).
 
