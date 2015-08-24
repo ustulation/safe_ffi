@@ -9,8 +9,7 @@ jpm SDK is used to build the add on. Follow this [link](https://developer.mozill
 ```
 mkdir build
 cd build/
-gcc -c -std=c99 -Wall -Werror -fPIC ../../../c/c_wrapper.c
-gcc -shared -o libc_wrapper.so c_wrapper.o -L./../../../rust/target/release -lsafe_ffi -lsodium
+gcc -shared -std=c99 -Wall -Werror -O2 -s -fvisibility=hidden -fPIC -o libc_wrapper.so ./../../../c/c_wrapper.c -L./../../../rust/target/release -lsafe_ffi -lsodium
 cp libc_wrapper.so ../
 cd ../
 rm -rf build/
@@ -27,8 +26,7 @@ The commands were run from git-bash prompt, thus its similarity to Linux prompt.
 ```
 mkdir build
 cd build/
-gcc -c -std=c99 -Wall -Werror ../../../c/c_wrapper.c
-gcc -shared -O2 -s -o libc_wrapper.dll c_wrapper.o -L./../../../rust/target/release -lsafe_ffi -L./path/to/native-sodium -lsodium -lIphlpapi -lws2_32 -luserenv -Wl,--out-implib,libc_wrapper.dll.a
+gcc -shared -std=c99 -Wall -Werror -O2 -s -fvisibility=hidden -o libc_wrapper.dll ./../../../c/c_wrapper.c -L./../../../rust/target/release -lsafe_ffi -L./path/to/native-sodium -lsodium -lIphlpapi -lws2_32 -luserenv -Wl,--out-implib,libc_wrapper.dll.a
 cp libc_wrapper.dll ../
 cd ../
 rm -rf build/

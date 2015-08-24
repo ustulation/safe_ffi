@@ -16,8 +16,7 @@ swig -python -outcurrentdir ../interface.i
 ```
 Build shared library `libc_wrapper.so` out of `c_wrapper.c` file (libsodium needs to be compiled with fPIC enabled):
 ```
-gcc -c -std=c99 -Wall -Werror -fPIC ../../../c/c_wrapper.c ./interface_wrap.c -I/usr/include/python2.7
-gcc -shared -o _safe_python.so c_wrapper.o interface_wrap.o -L./../../../rust/target/release -lsafe_ffi -lsodium
+gcc -shared -std=c99 -Wall -Werror -O2 -s -fvisibility=hidden -fPIC -o _safe_python.so ./../../../c/c_wrapper.c ./interface_wrap.c -I/usr/include/python2.7 -L./../../../rust/target/release -lsafe_ffi -lsodium
 ```
 Call code from python:
 ```

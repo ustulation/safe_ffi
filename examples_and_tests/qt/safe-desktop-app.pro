@@ -19,6 +19,6 @@ HEADERS  += mainwindow.h
 
 LIBS += -L../ -lc_wrapper
 LIBS += -L../../../../rust/target/release -lsafe_ffi
-LIBS += -lsodium -ldl
+LIBS += -lsodium -ldl -lrt
 
 FORMS    += mainwindow.ui
