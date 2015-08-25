@@ -16,7 +16,7 @@ crate_type = ["staticlib"]
 
 [dependencies]
 # ---- Maidsafe ----
-#routing     = "*"
+routing     = "0.3.4"
 #safe_nfs    = "*"
 #safe_dns    = "*"
 #safe_client = "*"
@@ -33,9 +33,6 @@ git = "https://github.com/maidsafe/safe_nfs.git"
 
 [dependencies.safe_dns]
 git = "https://github.com/maidsafe/safe_dns.git"
-
-[dependencies.routing]
-git = "https://github.com/maidsafe/routing.git"
 
 [features]
 USE_ACTUAL_ROUTING = ["safe_dns/USE_ACTUAL_ROUTING",
