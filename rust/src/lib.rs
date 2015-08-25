@@ -36,8 +36,8 @@ unused_qualifications, variant_size_differences)]
 ///////////////////////////////////////////////////
 
 // TODO
-//! #Nfs-FFI Library
-//! [Project github page](https://github.com/maidsafe/safe_dns)
+//! #Client-FFI Library
+//! [Project github page](https://github.com/ustulation/safe_ffi)
 
 extern crate libc;
 extern crate routing;
@@ -102,6 +102,7 @@ pub extern fn create_file(c_path   : *const libc::c_char,
 /// Get the size of the file. c_size should be properly and sufficiently pre-allocated.
 /// The Name of the file is the final token in the given path. Eg.,
 /// if given path = "/a/b/c/d" then "d" is interpreted as the file intended to be read.
+#[allow(trivial_numeric_casts)] // TODO refer to the one below - sort that then remove this
 #[no_mangle]
 pub extern fn get_file_size(c_path: *const libc::c_char, c_size: *mut libc::size_t) -> libc::int32_t {
     let mut tokens = ffi_try!(implementation::path_tokeniser(c_path));
@@ -111,7 +112,7 @@ pub extern fn get_file_size(c_path: *const libc::c_char, c_size: *mut libc::size
 
     let size = ffi_try!(implementation::get_file_size(&file_name, &parent_dir_listing));
 
-    unsafe { std::ptr::write(c_size, size) };
+    unsafe { std::ptr::write(c_size, size as libc::size_t) }; // TODO All crates must use usize instead of u64 for file-sizes to avoid casting for lower bit architectures
 
     0
 }
@@ -198,12 +199,13 @@ pub extern fn add_service(c_long_name            : *const libc::c_char,
 // service-home-directory.
 
 /// Get file size from service home directory
+#[allow(trivial_numeric_casts)] // TODO refer to the one below - sort that then remove this
 #[no_mangle]
-pub fn get_file_size_from_service_home_dir(c_long_name   : *const libc::c_char,
-                                           c_service_name: *const libc::c_char,
-                                           c_file_name   : *const libc::c_char,
-                                           is_private    : bool,
-                                           c_content_size: *mut libc::size_t) -> libc::int32_t {
+pub extern fn get_file_size_from_service_home_dir(c_long_name   : *const libc::c_char,
+                                                  c_service_name: *const libc::c_char,
+                                                  c_file_name   : *const libc::c_char,
+                                                  is_private    : bool,
+                                                  c_content_size: *mut libc::size_t) -> libc::int32_t {
     let long_name = ffi_try!(implementation::c_char_ptr_to_string(c_long_name));
     let service_name = ffi_try!(implementation::c_char_ptr_to_string(c_service_name));
     let file_name = ffi_try!(implementation::c_char_ptr_to_string(c_file_name));
@@ -225,18 +227,18 @@ pub fn get_file_size_from_service_home_dir(c_long_name   : *const libc::c_char,
 
     let file_size = ffi_try!(implementation::get_file_size(&file_name, &service_dir_listing));
 
-    unsafe { std::ptr::write(c_content_size, file_size) };
+    unsafe { std::ptr::write(c_content_size, file_size as libc::size_t) }; // TODO All crates must use usize instead of u64 for file-sizes to avoid casting for lower bit architectures
 
     0
 }
 
 /// Get file content from service home directory
 #[no_mangle]
-pub fn get_file_content_from_service_home_dir(c_long_name   : *const libc::c_char,
-                                              c_service_name: *const libc::c_char,
-                                              c_file_name   : *const libc::c_char,
-                                              is_private    : bool,
-                                              c_content_buf : *mut libc::uint8_t) -> libc::int32_t {
+pub extern fn get_file_content_from_service_home_dir(c_long_name   : *const libc::c_char,
+                                                     c_service_name: *const libc::c_char,
+                                                     c_file_name   : *const libc::c_char,
+                                                     is_private    : bool,
+                                                     c_content_buf : *mut libc::uint8_t) -> libc::int32_t {
     let long_name = ffi_try!(implementation::c_char_ptr_to_string(c_long_name));
     let service_name = ffi_try!(implementation::c_char_ptr_to_string(c_service_name));
     let file_name = ffi_try!(implementation::c_char_ptr_to_string(c_file_name));
