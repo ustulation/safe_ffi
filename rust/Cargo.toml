@@ -16,7 +16,7 @@ crate_type = ["staticlib"]
 
 [dependencies]
 # ---- Maidsafe ----
-routing     = "0.3.4"
+routing     = "0.3.*"
 #safe_nfs    = "*"
 #safe_dns    = "*"
 #safe_client = "*"
