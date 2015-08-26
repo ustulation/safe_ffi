@@ -11,4 +11,7 @@ cd rust/
 cargo build --release
 ```
 This will give `rust/target/release/libsafe_ffi.a`
-Change location to desired programming language under examples_and_tests and follow the instructions there.
+Change location to desired programming language under `examples_and_tests` and follow the instructions there.
+
+## Note:
+There is no difference between using rust-compiled `.so/.a/.dll`'s or C `.so/.a/.dll`'s. The C indirection is only for those who would want to use `SWIG` and also for demonstration purpose. In examples that don't use `SWIG`, the rust-compiled binaries (from `safe_ffi`) can directly be used.
