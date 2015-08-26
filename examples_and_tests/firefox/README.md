@@ -36,4 +36,4 @@ jpm run -b /c-or-d-etc/path/to/64-bit/firefox.exe
 ```
 
 ## Note
-Ofcourse modify `index.js` to point to `"./libc_wrapper.dll"` or `"./libc_wrapper.so"` according to the build-platform.
+Ofcourse modify `index.js` to point to `"./libc_wrapper.dll"` or `"./libc_wrapper.so"` according to the build-platform. Also `libsodium` and other native dependencies must be compiled for 32-bit platform in order to work with 32-bit builds.
