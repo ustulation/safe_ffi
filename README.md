@@ -10,6 +10,11 @@ Build static library `libsafe_ffi.a` out of `safe_ffi` crate:
 cd rust/
 cargo build --release
 ```
+To build against Mock-routing (Simulates routing and vault minutely without networking - only used for testing purposes) do:
+```
+cd rust/
+cargo build --release --features "use-mock-routing"
+```
 This will give `rust/target/release/libsafe_ffi.a`
 Change location to desired programming language under `examples_and_tests` and follow the instructions there.
 
