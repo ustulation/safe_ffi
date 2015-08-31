@@ -1,8 +1,8 @@
 [package]
 name          = "safe_ffi"
-version       = "0.0.1"
+version       = "0.1.0"
 authors       = ["Spandan Sharma <spandan.sharma@maidsafe.net>"]
-description   = "FFI-wrapper over safe_nfs and safe_dns"
+description   = "FFI-wrapper over Client Modules"
 #documentation = "" // TODO
 #repository    = "" // TODO
 readme        = "README.md"
@@ -11,30 +11,20 @@ homepage      = "http://maidsafe.net"
 
 [lib]
 name       = "safe_ffi"
-#crate_type = ["dylib"]
 crate_type = ["staticlib"]
 
 [dependencies]
 # ---- Maidsafe ----
 routing     = "0.3.*"
-#safe_nfs    = "*"
-#safe_dns    = "*"
-#safe_client = "*"
+safe_nfs    = "0.1.*"
+safe_dns    = "0.1.*"
+safe_client = "0.1.*"
 
 # ---- Others ----
 libc        = "*"
 sodiumoxide = "*"
 
-[dependencies.safe_client]
-git = "https://github.com/maidsafe/safe_client.git"
-
-[dependencies.safe_nfs]
-git = "https://github.com/maidsafe/safe_nfs.git"
-
-[dependencies.safe_dns]
-git = "https://github.com/maidsafe/safe_dns.git"
-
 [features]
-USE_ACTUAL_ROUTING = ["safe_dns/USE_ACTUAL_ROUTING",
-                      "safe_nfs/USE_ACTUAL_ROUTING",
-                      "safe_client/USE_ACTUAL_ROUTING"]
+use-mock-routing= ["safe_dns/use-mock-routing",
+                   "safe_nfs/use-mock-routing",
+                   "safe_client/use-mock-routing"]
