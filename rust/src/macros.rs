@@ -21,7 +21,7 @@
 /// #Examples
 ///
 /// ```
-/// # #[macro_use] extern crate nfs_ffi;
+/// # #[macro_use] extern crate safe_ffi;
 /// # #[macro_use] extern crate safe_client;
 /// fn f() -> i32 {
 ///     let some_result: Result<String, safe_client::errors::ClientError> = Ok("Hello".to_string());
