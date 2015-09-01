@@ -1,5 +1,7 @@
 # safe_ffi
-This repository provides FFI bindings for safe_nfs and safe_dns.
+This repository provides FFI bindings for the Client modules.
+
+**IMPORTANT [01-Sep-2015]:** The *FFI* contents of this repository has been replicated into the newly created [official MaidSafe repository](https://github.com/maidsafe/safe_ffi). It will be more actively maintained there. This repository will stay mostly as a reference on how to use the FFI-bindings indirectly through C-indirection and/or [SWIG](http://www.swig.org/) for target languages/browsers. As such it is not intended that everything noted here compiles although it does right now. Any PR's to to improve, correct or expand will however be monitored and accepted.
 
 ## Build Instructions:
 
